@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#f6f5f1;color:#1a1d1b;font-family:'Geist',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+a{color:#2f9e52}
+a:hover{color:#1f7a3c}
+::selection{background:#cfe9d6;color:#1a1d1b}
+input:focus,textarea:focus{outline:none;border-color:#a9a59b !important}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:#dcd9d1;border-radius:3px}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+<div style="display:flex;flex-wrap:wrap;min-height:100vh;background:#f6f5f1">
+  <div style="position:relative;flex:999 1 520px;height:100vh;min-width:0;overflow:hidden;background:radial-gradient(ellipse at 50% 60%, #fdfcf9 0%, #efeee8 75%)">
+    <div ref="{{ mountRef }}" style="position:absolute;inset:0"></div>
+    <div ref="{{ labelRef }}" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div>
+
+    <div style="position:absolute;top:24px;left:28px;display:flex;flex-direction:column;gap:6px;pointer-events:none;z-index:150">
+      <div style="font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:0.08em;color:#2f9e52">~/devops/tree</div>
+      <div style="font-size:26px;font-weight:600;letter-spacing:-0.02em">My DevOps Journey</div>
+      <div style="font-family:'Geist Mono',monospace;font-size:12px;color:#5f6661;white-space:nowrap">{{ progressText }}</div>
+    </div>
+
+    <div style="position:absolute;top:24px;right:24px;display:flex;gap:8px;z-index:150">
+      <button onClick="{{ toggleView }}" style="font-family:'Geist Mono',monospace;font-size:12px;font-weight:600;color:#ffffff;background:#1a1d1b;border:1px solid #1a1d1b;border-radius:8px;padding:8px 12px;cursor:pointer;white-space:nowrap" style-hover="background:#000000">{{ viewLabel }}</button>
+      <button onClick="{{ toggleRotate }}" style="font-family:'Geist Mono',monospace;font-size:12px;color:#3a3f3c;background:rgba(255,255,255,0.88);border:1px solid #dcd9d1;border-radius:8px;padding:8px 12px;cursor:pointer;white-space:nowrap" style-hover="border-color:#a9a59b;color:#1a1d1b">{{ rotateLabel }}</button>
+      <button onClick="{{ resetView }}" style="font-family:'Geist Mono',monospace;font-size:12px;color:#3a3f3c;background:rgba(255,255,255,0.88);border:1px solid #dcd9d1;border-radius:8px;padding:8px 12px;cursor:pointer;white-space:nowrap" style-hover="border-color:#a9a59b;color:#1a1d1b">Reset view</button>
+    </div>
+
+    <sc-if value="{{ showLegend }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;left:28px;bottom:24px;display:flex;flex-wrap:wrap;align-items:center;gap:18px;font-family:'Geist Mono',monospace;font-size:11px;color:#5f6661;pointer-events:none">
+      <div style="display:flex;align-items:center;gap:7px;white-space:nowrap"><span style="width:10px;height:10px;border-radius:50%;border:1px solid #a9a59b;background:#e6e4dd"></span>not started</div>
+      <div style="display:flex;align-items:center;gap:7px;white-space:nowrap"><span style="width:10px;height:10px;border-radius:50%;border:1px dashed #1a1d1b"></span>learning</div>
+      <div style="display:flex;align-items:center;gap:7px;white-space:nowrap"><span style="width:10px;height:10px;border-radius:50%;background:#1a1d1b;box-shadow:0 0 10px #1a1d1b"></span>mastered</div>
+      <div style="color:#8b918c">drag to orbit · scroll to zoom · click a leaf · ← → to step</div>
+    </div></sc-if>
+    <sc-if value="{{ showDetail }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:28px;bottom:24px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;max-width:calc(100% - 56px);font-family:'Geist Mono',monospace;font-size:11px;color:#5f6661;z-index:150">
+        <span style="flex:none;white-space:nowrap;padding:4px 9px;border-radius:99px;background:#1a1d1b;color:#ffffff;letter-spacing:0.08em">FOCUS MODE</span>
+        <span>esc or × to return to the full tree</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ view2d }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:#f6f5f1;overflow:auto;padding:120px 28px 60px;z-index:100">
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:22px">
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5f6661">Roadmap · suggested learning order, left to right</div>
+        </div>
+        <div style="display:flex;gap:14px;align-items:flex-start;width:max-content;padding-right:640px">
+          <sc-for list="{{ roadmap }}" as="col" hint-placeholder-count="9">
+            <div style="width:210px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;flex-direction:column;gap:6px;padding:0 2px 10px;border-bottom:2px solid {{ col.color }}">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:#8b918c"><span>STAGE {{ col.num }}</span><span>{{ col.countText }}</span></div>
+                <div style="font-size:16px;font-weight:600;color:{{ col.color }}">{{ col.name }}</div>
+              </div>
+              <sc-for list="{{ col.topics }}" as="t" hint-placeholder-count="3">
+                <button onClick="{{ t.onClick }}" style="display:flex;flex-direction:column;gap:8px;padding:12px 13px;background:#ffffff;border:1px solid {{ t.border }};border-radius:10px;text-align:left;cursor:pointer;font-family:inherit;color:#1a1d1b;box-shadow:0 1px 2px rgba(40,36,24,0.05)" style-hover="border-color:#a9a59b">
+                  <span style="font-size:14px;font-weight:500;line-height:1.3">{{ t.name }}</span>
+                  <span style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+                    <span style="font-family:'Geist Mono',monospace;font-size:10px;padding:2px 8px;border-radius:99px;background:{{ t.pillBg }};color:{{ t.pillFg }};border:{{ t.pillBorder }}">{{ t.pillText }}</span>
+                    <span style="font-family:'Geist Mono',monospace;font-size:10.5px;color:#8b918c">{{ t.quizText }}</span>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showDetail }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;top:80px;right:24px;bottom:64px;width:min(680px, calc(100% - 48px));display:flex;flex-direction:column;background:rgba(255,255,255,0.95);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid #dcd9d1;border-radius:18px;box-shadow:0 30px 80px rgba(40,36,24,0.14);overflow:hidden;z-index:200">
+        <div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap;font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:{{ sel.color }}">
+              <span style="flex:none;width:8px;height:8px;border-radius:50%;background:{{ sel.color }};box-shadow:0 0 10px {{ sel.color }}"></span>
+              <span style="overflow:hidden;text-overflow:ellipsis">{{ sel.branchName }}</span>
+              <span style="flex:none;color:#8b918c">{{ sel.posText }}</span>
+            </div>
+            <button onClick="{{ backToAll }}" aria-label="Close" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;color:#5f6661;background:none;border:1px solid #dcd9d1;border-radius:8px;cursor:pointer" style-hover="color:#1a1d1b;border-color:#a9a59b">×</button>
+          </div>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+            <h2 style="margin:0;font-size:30px;font-weight:600;letter-spacing:-0.025em;line-height:1.05">{{ sel.name }}</h2>
+            <div style="display:flex;padding:3px;gap:3px;background:#ffffff;border:1px solid #e6e4dd;border-radius:9px">
+              <sc-for list="{{ statusOptions }}" as="o" hint-placeholder-count="3">
+                <button onClick="{{ o.onClick }}" style="font-family:'Geist Mono',monospace;font-size:11px;padding:6px 10px;border:none;border-radius:6px;cursor:pointer;white-space:nowrap;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;border-bottom:1px solid #e6e4dd;margin:4px -24px 0;padding:0 16px;overflow-x:auto;scrollbar-width:none">
+            <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="4">
+              <button onClick="{{ tb.onClick }}" style="font-family:inherit;font-size:13.5px;padding:12px 6px 11px;margin-bottom:-1px;background:none;border:none;border-bottom:2px solid {{ tb.line }};color:{{ tb.fg }};cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:7px" style-hover="color:#1a1d1b"><span style="font-family:'Geist Mono',monospace;font-size:10px;color:#8b918c">{{ tb.num }}</span>{{ tb.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div ref="{{ cardBodyRef }}" style="flex:1;min-height:0;overflow-y:auto;padding:24px 24px 28px">
+          <sc-if value="{{ tabOverview }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:22px;max-width:62ch">
+              <div style="font-size:19px;line-height:1.55;color:#1a1d1b;text-wrap:pretty;font-weight:500">{{ sel.analogy }}</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5f6661">What it is</div>
+                <div style="font-size:15.5px;line-height:1.7;color:#3a3f3c;text-wrap:pretty">{{ sel.summary }}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5f6661">Why it matters</div>
+                <div style="font-size:15.5px;line-height:1.7;color:#3a3f3c;text-wrap:pretty">{{ sel.why }}</div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ tabDeep }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:26px">
+              <div style="font-size:16.5px;line-height:1.65;color:#1a1d1b;text-wrap:pretty;max-width:62ch">{{ deep.intro }}</div>
+
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                  <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5f6661">How it works · step by step</div>
+                  <button onClick="{{ toggleFlow }}" style="font-family:'Geist Mono',monospace;font-size:11.5px;font-weight:600;color:{{ flowBtnFg }};background:{{ flowBtnBg }};border:1px solid {{ sel.color }};border-radius:8px;padding:6px 11px;cursor:pointer;white-space:nowrap">{{ flowBtnLabel }}</button>
+                </div>
+                <div style="display:flex;flex-direction:column">
+                  <sc-for list="{{ deepFlow }}" as="f" hint-placeholder-count="5">
+                    <div style="display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;background:{{ f.bg }};border-radius:10px;padding:6px 8px 0;margin:0 -8px;transition:background .3s">
+                      <div style="display:flex;flex-direction:column;align-items:center">
+                        <span style="width:24px;height:24px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid {{ sel.color }};font-family:'Geist Mono',monospace;font-size:11px;color:{{ f.dotFg }};background:{{ f.dotBg }}">{{ f.num }}</span>
+                        <span style="flex:1;width:1px;background:{{ f.line }};margin:4px 0"></span>
+                      </div>
+                      <div style="font-size:15px;line-height:1.6;color:{{ f.fg }};font-weight:{{ f.fw }};padding:2px 0 14px;text-wrap:pretty">{{ f.text }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                  <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5f6661">Components · {{ deepCount }}</div>
+                  <button onClick="{{ toggleAllParts }}" style="font-family:'Geist Mono',monospace;font-size:11px;color:#5f6661;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;white-space:nowrap">{{ toggleAllLabel }}</button>
+                </div>
+                <div style="display:flex;flex-direction:column;border:1px solid #e6e4dd;border-radius:14px;overflow:hidden">
+                  <sc-for list="{{ deepParts }}" as="p" hint-placeholder-count="6">
+                    <div data-part="{{ p.idx }}" style="display:flex;flex-direction:column;border-top:1px solid {{ p.border }};background:{{ p.bg }};transition:background .3s">
+                      <button onClick="{{ p.onClick }}" style="display:grid;grid-template-columns:28px minmax(0,1fr) 16px;align-items:center;gap:10px;padding:14px 16px;background:none;border:none;cursor:pointer;text-align:left;font-family:inherit;color:#1a1d1b" style-hover="background:#f3f2ed">
+                        <span style="font-family:'Geist Mono',monospace;font-size:11px;color:#8b918c">{{ p.num }}</span>
+                        <span style="display:flex;flex-direction:column;gap:3px;min-width:0">
+                          <span style="font-size:15.5px;font-weight:600">{{ p.n }}</span>
+                          <span style="font-size:13px;color:#5f6661;line-height:1.4">{{ p.r }}</span>
+                        </span>
+                        <span style="font-family:'Geist Mono',monospace;font-size:14px;color:#5f6661">{{ p.icon }}</span>
+                      </button>
+                      <sc-if value="{{ p.open }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;flex-direction:column;gap:12px;padding:0 18px 18px 54px">
+                          <div style="font-size:15px;line-height:1.7;color:#3a3f3c;text-wrap:pretty">{{ p.d }}</div>
+                          <sc-if value="{{ p.hasX }}" hint-placeholder-val="{{ false }}">
+                            <pre style="margin:0;padding:12px 14px;background:#f7f6f2;border:1px solid #e6e4dd;border-radius:10px;overflow-x:auto;font-family:'Geist Mono',monospace;font-size:12px;line-height:1.65;color:#2a2f2c;white-space:pre">{{ p.x }}</pre>
+                          </sc-if>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ tabConcepts }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:18px;height:100%">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5f6661;white-space:nowrap">Concept {{ conceptNum }} of {{ conceptTotal }}</div>
+                <div style="display:flex;gap:6px">
+                  <sc-for list="{{ conceptDots }}" as="d" hint-placeholder-count="5">
+                    <button onClick="{{ d.onClick }}" aria-label="Go to concept" style="width:22px;height:6px;padding:0;border:none;border-radius:3px;cursor:pointer;background:{{ d.bg }}"></button>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:28px 26px;min-height:220px;background:#f3f2ed;border:1px solid #e6e4dd;border-radius:14px">
+                <div style="font-family:'Geist Mono',monospace;font-size:12px;color:{{ sel.color }}">{{ conceptCounter }}</div>
+                <div style="font-size:24px;font-weight:600;letter-spacing:-0.015em;line-height:1.2;color:#1a1d1b;text-wrap:balance">{{ concept.term }}</div>
+                <div style="font-size:16.5px;line-height:1.65;color:#3a3f3c;text-wrap:pretty">{{ concept.desc }}</div>
+              </div>
+              <div style="display:flex;justify-content:space-between;gap:8px">
+                <button onClick="{{ prevConcept }}" style="font-family:'Geist Mono',monospace;font-size:12px;color:#3a3f3c;background:none;border:1px solid #dcd9d1;border-radius:8px;padding:8px 12px;cursor:pointer;white-space:nowrap" style-hover="border-color:#a9a59b">← Previous</button>
+                <button onClick="{{ nextConcept }}" style="font-family:'Geist Mono',monospace;font-size:12px;color:#3a3f3c;background:none;border:1px solid #dcd9d1;border-radius:8px;padding:8px 12px;cursor:pointer;white-space:nowrap" style-hover="border-color:#a9a59b">Next concept →</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ tabExample }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+                  <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5f6661">{{ sel.lang }}</div>
+                  <div style="font-size:16px;font-weight:500">{{ sel.exampleTitle }}</div>
+                </div>
+                <button onClick="{{ copyCode }}" style="font-family:'Geist Mono',monospace;font-size:12px;color:#3a3f3c;background:none;border:1px solid #dcd9d1;border-radius:8px;padding:8px 12px;cursor:pointer;white-space:nowrap" style-hover="border-color:#a9a59b">{{ copyLabel }}</button>
+              </div>
+              <pre style="margin:0;padding:18px 20px;background:#f7f6f2;border:1px solid #e6e4dd;border-radius:12px;overflow-x:auto;font-family:'Geist Mono',monospace;font-size:12.5px;line-height:1.7;color:#2a2f2c;white-space:pre;tab-size:2">{{ sel.code }}</pre>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ tabCheat }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+                <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5f6661">Cheat sheet · {{ cheatCount }}</div>
+                <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#8b918c">{{ cheatHint }}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;border:1px solid #e6e4dd;border-radius:14px;overflow:hidden">
+                <sc-for list="{{ cheat }}" as="c" hint-placeholder-count="8">
+                  <button onClick="{{ c.onClick }}" style="display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:center;padding:11px 14px;border:none;border-top:1px solid {{ c.border }};background:#ffffff;text-align:left;cursor:pointer;font-family:inherit" style-hover="background:#faf9f6">
+                    <code style="font-family:'Geist Mono',monospace;font-size:12.5px;line-height:1.5;color:#1a1d1b;word-break:break-word">{{ c.cmd }}</code>
+                    <span style="font-size:13.5px;color:#5f6661;line-height:1.45">{{ c.desc }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ tabTest }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:18px">
+              <div style="display:flex;padding:3px;gap:3px;background:#f3f2ed;border:1px solid #e6e4dd;border-radius:10px">
+                <sc-for list="{{ testModes }}" as="m" hint-placeholder-count="3">
+                  <button onClick="{{ m.onClick }}" style="flex:1;font-family:inherit;font-size:13.5px;font-weight:500;padding:9px 6px;border:none;border-radius:7px;cursor:pointer;white-space:nowrap;background:{{ m.bg }};color:{{ m.fg }};box-shadow:{{ m.shadow }}">{{ m.label }}</button>
+                </sc-for>
+              </div>
+              <sc-if value="{{ modeQuiz }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:14px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                    <div style="font-size:15px;font-weight:600">{{ quizScoreText }}</div>
+                    <button onClick="{{ resetQuiz }}" style="font-family:'Geist Mono',monospace;font-size:12px;color:#3a3f3c;background:#ffffff;border:1px solid #dcd9d1;border-radius:8px;padding:8px 12px;cursor:pointer;white-space:nowrap" style-hover="border-color:#a9a59b">Retake quiz</button>
+                  </div>
+                  <sc-for list="{{ quiz }}" as="qz" hint-placeholder-count="4">
+                    <div style="display:flex;flex-direction:column;gap:12px;padding:18px 20px;background:#ffffff;border:1px solid #e6e4dd;border-radius:14px">
+                      <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#8b918c">QUESTION {{ qz.num }}</div>
+                      <div style="font-size:16px;font-weight:600;line-height:1.45;text-wrap:pretty">{{ qz.q }}</div>
+                      <div style="display:flex;flex-direction:column;gap:8px">
+                        <sc-for list="{{ qz.opts }}" as="op" hint-placeholder-count="4">
+                          <button onClick="{{ op.onClick }}" style="display:flex;align-items:center;gap:12px;text-align:left;padding:11px 14px;border-radius:10px;border:1px solid {{ op.border }};background:{{ op.bg }};color:{{ op.fg }};font-family:inherit;font-size:14.5px;line-height:1.4;cursor:pointer">
+                            <span style="flex:none;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid {{ op.border }};font-family:'Geist Mono',monospace;font-size:11px">{{ op.mark }}</span>
+                            <span>{{ op.text }}</span>
+                          </button>
+                        </sc-for>
+                      </div>
+                      <sc-if value="{{ qz.answered }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-size:14px;line-height:1.6;color:#3a3f3c;padding:12px 14px;background:#f7f6f2;border-radius:10px;text-wrap:pretty"><strong style="color:{{ qz.verdictColor }}">{{ qz.verdict }}</strong> {{ qz.e }}</div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ modeInterview }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <sc-for list="{{ interview }}" as="iv" hint-placeholder-count="3">
+                    <div style="display:flex;flex-direction:column;gap:12px;padding:18px 20px;background:#ffffff;border:1px solid #e6e4dd;border-radius:14px">
+                      <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#8b918c">INTERVIEW QUESTION {{ iv.num }}</div>
+                      <div style="font-size:16.5px;font-weight:600;line-height:1.45;text-wrap:pretty">{{ iv.q }}</div>
+                      <div style="font-size:13px;color:#8b918c;line-height:1.5">Answer out loud first, then compare.</div>
+                      <div style="display:flex">
+                        <button onClick="{{ iv.onClick }}" style="font-family:'Geist Mono',monospace;font-size:12px;color:#3a3f3c;background:#ffffff;border:1px solid #dcd9d1;border-radius:8px;padding:8px 12px;cursor:pointer;white-space:nowrap" style-hover="border-color:#a9a59b">{{ iv.btn }}</button>
+                      </div>
+                      <sc-if value="{{ iv.open }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;background:#f7f6f2;border-radius:10px">
+                          <div style="font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:{{ sel.color }}">MODEL ANSWER</div>
+                          <div style="font-size:15px;line-height:1.7;color:#1a1d1b;text-wrap:pretty">{{ iv.a }}</div>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ modeTrouble }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:14px">
+                  <sc-for list="{{ trouble }}" as="tr" hint-placeholder-count="1">
+                    <div style="display:flex;flex-direction:column;gap:12px;padding:18px 20px;background:#ffffff;border:1px solid #e6e4dd;border-radius:14px;gap:16px">
+                      <div style="display:flex;flex-direction:column;gap:6px">
+                        <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#d64545;letter-spacing:0.08em">INCIDENT {{ tr.num }}</div>
+                        <div style="font-size:18px;font-weight:600;line-height:1.3">{{ tr.t }}</div>
+                      </div>
+                      <div style="display:flex;flex-direction:column;gap:6px;padding:12px 14px;background:#fbf3f2;border:1px solid #f0dcd9;border-radius:10px">
+                        <div style="font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:#a33232">SYMPTOM</div>
+                        <div style="font-size:15px;line-height:1.6;color:#1a1d1b">{{ tr.s }}</div>
+                      </div>
+                      <div style="display:flex;flex-direction:column;gap:8px">
+                        <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5f6661">How to investigate</div>
+                        <sc-for list="{{ tr.steps }}" as="s" hint-placeholder-count="4">
+                          <div style="display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;align-items:start">
+                            <span style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#f3f2ed;font-family:'Geist Mono',monospace;font-size:11px;color:#5f6661">{{ s.num }}</span>
+                            <span style="font-size:14.5px;line-height:1.6;color:#3a3f3c">{{ s.text }}</span>
+                          </div>
+                        </sc-for>
+                      </div>
+                      <div style="display:flex">
+                        <button onClick="{{ tr.onClick }}" style="font-family:'Geist Mono',monospace;font-size:12px;font-weight:600;color:#ffffff;background:#1a1d1b;border:1px solid #1a1d1b;border-radius:8px;padding:8px 14px;cursor:pointer;white-space:nowrap" style-hover="background:#000000">{{ tr.btn }}</button>
+                      </div>
+                      <sc-if value="{{ tr.open }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;flex-direction:column;gap:12px">
+                          <div style="display:flex;flex-direction:column;gap:6px;padding:12px 14px;background:#f7f6f2;border-radius:10px">
+                            <div style="font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:#5f6661">ROOT CAUSE</div>
+                            <div style="font-size:15px;line-height:1.65;color:#1a1d1b">{{ tr.cause }}</div>
+                          </div>
+                          <div style="display:flex;flex-direction:column;gap:6px;padding:12px 14px;background:#eef6f0;border:1px solid #d3e8da;border-radius:10px">
+                            <div style="font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:#1f7a3c">FIX</div>
+                            <div style="font-size:15px;line-height:1.65;color:#1a1d1b">{{ tr.fix }}</div>
+                          </div>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ tabPractice }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:22px">
+              <div style="display:flex;flex-direction:column;gap:10px;padding:20px 22px;border:1px dashed #cfcbc1;border-radius:14px">
+                <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:{{ sel.color }}">Try it yourself</div>
+                <div style="font-size:17px;line-height:1.6;color:#1a1d1b;text-wrap:pretty">{{ sel.practice }}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5f6661">My notes</div>
+                <textarea value="{{ noteValue }}" onChange="{{ onNote }}" placeholder="Gotchas, commands you keep forgetting, links… saved automatically." rows="6" style="width:100%;resize:vertical;font-family:'Geist Mono',monospace;font-size:13px;line-height:1.6;color:#1a1d1b;background:#ffffff;border:1px solid #dcd9d1;border-radius:10px;padding:12px 14px"></textarea>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 24px;border-top:1px solid #e6e4dd">
+          <button onClick="{{ goPrev }}" style="font-family:'Geist Mono',monospace;font-size:12px;color:#3a3f3c;background:none;border:1px solid #dcd9d1;border-radius:8px;padding:8px 12px;cursor:pointer;white-space:nowrap" style-hover="border-color:#a9a59b">← Prev topic</button>
+          <button onClick="{{ forward }}" style="font-family:'Geist Mono',monospace;font-size:12px;font-weight:600;color:#ffffff;background:#1a1d1b;border:1px solid #1a1d1b;border-radius:8px;padding:8px 14px;cursor:pointer;white-space:nowrap" style-hover="background:#000000">{{ forwardLabel }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:13px;color:#5f6661">growing the tree…</div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ showAside }}" hint-placeholder-val="{{ true }}"><aside ref="{{ panelRef }}" style="flex:1 1 420px;min-width:0;height:100vh;overflow-y:auto;background:#ffffff;border-left:1px solid #e6e4dd">
+
+    <sc-if value="{{ showOverview }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:28px 28px 56px;display:flex;flex-direction:column;gap:22px">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5f6661">Study map</div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+            <div style="font-size:30px;font-weight:600;letter-spacing:-0.02em">{{ doneCount }} <span style="color:#8b918c">/ {{ totalCount }}</span></div>
+            <div style="font-family:'Geist Mono',monospace;font-size:12px;color:#5f6661">{{ learningCount }} in progress</div>
+          </div>
+          <div style="height:6px;border-radius:3px;background:#e6e4dd;overflow:hidden">
+            <div style="height:100%;background:#1a1d1b;border-radius:3px;width:{{ pct }}"></div>
+          </div>
+        </div>
+
+        <input value="{{ query }}" onChange="{{ onQuery }}" placeholder="Search topics, tools, concepts…" style="width:100%;font-family:'Geist Mono',monospace;font-size:13px;color:#1a1d1b;background:#ffffff;border:1px solid #dcd9d1;border-radius:10px;padding:12px 14px"></input>
+
+        <sc-if value="{{ showRootCard }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ openRoot }}" style="text-align:left;display:flex;flex-direction:column;gap:6px;padding:16px 18px;background:#f3f2ed;border:1px solid #dcd9d1;border-radius:12px;color:#1a1d1b;cursor:pointer;font-family:inherit" style-hover="border-color:#a9a59b">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+              <span style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5f6661">Start here · crown of the tree</span>
+              <span style="font-family:'Geist Mono',monospace;font-size:10px;padding:2px 8px;border-radius:99px;background:{{ root.pillBg }};color:{{ root.pillFg }};border:{{ root.pillBorder }}">{{ root.pillText }}</span>
+            </div>
+            <span style="font-size:18px;font-weight:600">What is DevOps?</span>
+            <span style="font-size:13px;color:#5f6661;line-height:1.5">Culture, the infinite loop, and the metrics every tool on this tree is trying to improve.</span>
+          </button>
+        </sc-if>
+
+        <sc-if value="{{ hasBranchFocus }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;justify-content:space-between;font-family:'Geist Mono',monospace;font-size:12px;color:#5f6661">
+            <span>Showing one branch</span>
+            <button onClick="{{ clearBranchFocus }}" style="font-family:inherit;font-size:12px;color:#1a1d1b;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">show all</button>
+          </div>
+        </sc-if>
+
+        <sc-for list="{{ groups }}" as="group" hint-placeholder-count="8">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <button onClick="{{ group.onClick }}" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;background:none;border:none;color:#1a1d1b;cursor:pointer;font-family:inherit">
+              <span style="display:flex;align-items:center;gap:10px">
+                <span style="width:9px;height:9px;border-radius:50%;background:{{ group.color }};box-shadow:0 0 12px {{ group.color }}"></span>
+                <span style="font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:{{ group.color }}">{{ group.name }}</span>
+              </span>
+              <span style="font-family:'Geist Mono',monospace;font-size:11px;color:#8b918c">{{ group.countText }}</span>
+            </button>
+            <sc-for list="{{ group.topics }}" as="t" hint-placeholder-count="3">
+              <button onClick="{{ t.onClick }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;margin:0 -12px;background:{{ t.rowBg }};border:none;border-radius:8px;color:#1a1d1b;cursor:pointer;font-family:inherit;font-size:15px;text-align:left" style-hover="background:#f3f2ed">
+                <span style="display:flex;flex-direction:column;gap:2px;min-width:0">
+                  <span>{{ t.name }}</span>
+                  <span style="font-size:12px;color:#8b918c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.teaser }}</span>
+                </span>
+                <span style="flex:none;font-family:'Geist Mono',monospace;font-size:10px;padding:2px 8px;border-radius:99px;background:{{ t.pillBg }};color:{{ t.pillFg }};border:{{ t.pillBorder }}">{{ t.pillText }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-for>
+
+        <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+          <div style="font-family:'Geist Mono',monospace;font-size:13px;color:#8b918c;padding:20px 0">No topic matches “{{ query }}”.</div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+  </aside></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;autoRotate&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;labelMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;all&quot;,&quot;branches&quot;,&quot;none&quot;],&quot;default&quot;:&quot;all&quot;,&quot;tsType&quot;:&quot;'all'|'branches'|'none'&quot;}}">
+const LS_KEY = 'devops-tree-progress-v1';
+const THREE_URL = 'https://unpkg.com/three@0.147.0/build/three.min.js';
+const ORBIT_URL = 'https://unpkg.com/three@0.147.0/examples/js/controls/OrbitControls.js';
+const DATA_URL = './devops-data.js';
+const TAB_ORDER = ['overview', 'deep', 'concepts', 'example', 'cheat', 'test', 'practice'];
+
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = () => rej(new Error('Failed to load ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+class Component extends DCLogic {
+  state = { view: '3d', flowStep: -1, testMode: 'quiz', quiz: {}, reveal: {}, cheatCopied: null, openParts: { 0: true }, tab: 'overview', conceptIdx: 0, ready: false, selectedId: null, focusBranch: null, status: {}, notes: {}, query: '', copied: false, rotate: null };
+  mountRef = React.createRef();
+  labelRef = React.createRef();
+  panelRef = React.createRef();
+  cardBodyRef = React.createRef();
+  shift = 0;
+  objs = {};
+  hoverId = null;
+
+  async componentDidMount() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+      this.setState({ status: saved.status || {}, notes: saved.notes || {}, quiz: saved.quiz || {} });
+    } catch (e) {}
+    const tryLoad = async (urls) => { for (const u of urls) { try { await loadScript(u); return true; } catch (e) {} } return false; };
+    let has3d = true;
+    try {
+      if (!window.THREE) has3d = await tryLoad([THREE_URL, THREE_URL.replace('https://unpkg.com/', 'https://cdn.jsdelivr.net/npm/')]);
+      if (has3d && !window.THREE.OrbitControls) has3d = await tryLoad([ORBIT_URL.replace('https://unpkg.com/', 'https://cdn.jsdelivr.net/npm/'), ORBIT_URL]);
+    } catch (e) { has3d = false; }
+    this.has3d = has3d && !!(window.THREE && window.THREE.OrbitControls);
+    if (!window.DEVOPS_TREE) await loadScript(DATA_URL);
+    try { await Promise.all(['./devops-deep-1.js', './devops-deep-2.js', './devops-study-1.js', './devops-study-2.js', './devops-study-3.js'].map(loadScript)); await loadScript('./devops-deep-3.js'); } catch (e) { console.warn(e); }
+    const D = window.DEVOPS_TREE;
+    this.flat = [{ ...D.root, branchId: 'root', branchName: 'The big picture', color: '#1a1d1b' }];
+    D.branches.forEach(b => b.topics.forEach(t => this.flat.push({ ...t, branchId: b.id, branchName: b.name, color: b.color })));
+    this.byId = Object.fromEntries(this.flat.map(t => [t.id, t]));
+    this.setState({ ready: true }, () => { if (this.has3d) { try { this.initScene(); } catch (e) { console.error(e); } } });
+    this.onKey = (e) => {
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea') return;
+      if (e.key === 'Escape') this.backToAll();
+      if (e.key === 'ArrowRight') this.step(1);
+      if (e.key === 'ArrowLeft') this.step(-1);
+      if (this.state.selectedId && ['1','2','3','4','5','6','7'].includes(e.key)) this.setTab(TAB_ORDER[+e.key - 1]);
+    };
+    window.addEventListener('keydown', this.onKey);
+  }
+
+  componentWillUnmount() {
+    cancelAnimationFrame(this.raf);
+    clearInterval(this.flowTimer);
+    window.removeEventListener('keydown', this.onKey);
+    if (this.ro) this.ro.disconnect();
+    if (this.renderer) { this.renderer.dispose(); this.renderer.domElement.remove(); }
+    if (this.labelRef.current) this.labelRef.current.innerHTML = '';
+  }
+
+  persist(status, notes, quiz) {
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ status, notes, quiz: quiz || this.state.quiz })); } catch (e) {}
+  }
+
+  initScene() {
+    const T = window.THREE, D = window.DEVOPS_TREE, el = this.mountRef.current;
+    if (!el || this.renderer) return;
+    const V = T.Vector3;
+    const renderer = new T.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.domElement.style.display = 'block';
+    el.appendChild(renderer.domElement);
+    const scene = new T.Scene();
+    scene.fog = new T.Fog(0xf1f0eb, 26, 54);
+    const camera = new T.PerspectiveCamera(42, 1, 0.1, 100);
+    this.homeCam = new V(15, 9.5, 15); this.homeTarget = new V(0, 5.2, 0);
+    camera.position.copy(this.homeCam);
+    const controls = new T.OrbitControls(camera, renderer.domElement);
+    controls.target.copy(this.homeTarget);
+    controls.enableDamping = true; controls.dampingFactor = 0.08;
+    controls.minDistance = 3; controls.maxDistance = 36; controls.maxPolarAngle = Math.PI * 0.53;
+    controls.autoRotateSpeed = 0.5;
+    controls.addEventListener('start', () => { this.focus = null; this.lastInteract = performance.now(); });
+    Object.assign(this, { renderer, scene, camera, controls, T });
+
+    scene.add(new T.AmbientLight(0xffffff, 0.75));
+    const dl = new T.DirectionalLight(0xffffff, 0.9); dl.position.set(6, 12, 5); scene.add(dl);
+    const pl = new T.PointLight(0xffffff, 0.3, 20); pl.position.set(0, 1, 0); scene.add(pl);
+    this.grid = new T.PolarGridHelper(10, 16, 8, 64, 0xd6d3ca, 0xe4e2db); this.grid.material.transparent = true; scene.add(this.grid);
+
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const g = c.getContext('2d'); const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(0.25, 'rgba(255,255,255,0.45)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+    const glowTex = new T.CanvasTexture(c);
+
+    const bark = new T.Color(0xb3a996);
+    const barkMat = new T.MeshStandardMaterial({ color: bark, roughness: 0.85, metalness: 0.1, transparent: true });
+    this.woodMats = [barkMat];
+    const trunk = new T.Mesh(new T.CylinderGeometry(0.13, 0.55, 9.2, 24), barkMat);
+    trunk.position.y = 4.6; scene.add(trunk);
+    for (let i = 0; i < 6; i++) {
+      const a = i * 1.05 + 0.3;
+      const curve = new T.QuadraticBezierCurve3(new V(0, 0.6, 0), new V(Math.cos(a) * 0.7, 0.05, Math.sin(a) * 0.7), new V(Math.cos(a) * 1.7, -0.02, Math.sin(a) * 1.7));
+      scene.add(new T.Mesh(new T.TubeGeometry(curve, 20, 0.09, 8, false), barkMat));
+    }
+
+    this.pickables = [];
+    const addNode = (id, pos, radius, color, kind, label) => {
+      const col = new T.Color(color);
+      const mat = new T.MeshStandardMaterial({ color: col.clone(), emissive: col.clone(), emissiveIntensity: 0.4, roughness: 0.35, transparent: true });
+      const mesh = new T.Mesh(new T.SphereGeometry(radius, 28, 18), mat);
+      mesh.position.copy(pos); scene.add(mesh);
+      const hit = new T.Mesh(new T.SphereGeometry(radius * 1.5, 8, 6), new T.MeshBasicMaterial({ visible: false }));
+      hit.position.copy(pos); hit.userData.id = id; scene.add(hit); this.pickables.push(hit);
+      const glow = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: col.clone(), transparent: true, blending: T.NormalBlending, depthWrite: false }));
+      glow.position.copy(pos); scene.add(glow);
+      const lab = document.createElement('div');
+      lab.textContent = label;
+      const isBranch = kind !== 'topic';
+      lab.style.cssText = `position:absolute;left:0;top:0;white-space:nowrap;pointer-events:auto;cursor:pointer;font-family:'Geist Mono',monospace;border-radius:6px;transition:background .15s,color .15s;will-change:transform;` +
+        (isBranch ? `font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;padding:3px 8px;color:${color};background:rgba(255,255,255,.9);border:1px solid ${color}55;`
+                  : `font-size:11px;padding:2px 7px;color:#3a3f3c;background:rgba(255,255,255,.9);border:1px solid #dcd9d1;`);
+      lab.addEventListener('click', () => this.onNodeClick(id));
+      lab.addEventListener('mouseenter', () => { this.hoverId = id; });
+      lab.addEventListener('mouseleave', () => { if (this.hoverId === id) this.hoverId = null; });
+      this.labelRef.current.appendChild(lab);
+      this.objs[id] = { mesh, glow, mat, base: col, radius, kind, pos: pos.clone(), lab, color };
+    };
+
+    addNode(D.root.id, new V(0, 9.55, 0), 0.34, '#1a1d1b', 'root', 'What is DevOps');
+    const up = new V(0, 1, 0);
+    D.branches.forEach((b, i) => {
+      const a = i * 2.399 + 0.6, y0 = 1.9 + i * 0.78, R = 4.3 - i * 0.2;
+      const out = new V(Math.cos(a), 0, Math.sin(a)), tan = new V(-Math.sin(a), 0, Math.cos(a));
+      const end = new V(out.x * R, y0 + 1.1, out.z * R);
+      const curve = new T.QuadraticBezierCurve3(new V(0, y0, 0), new V(out.x * R * 0.55, y0 + 0.05, out.z * R * 0.55), end);
+      const tint = bark.clone().lerp(new T.Color(b.color), 0.22);
+      const bMat = new T.MeshStandardMaterial({ color: tint, roughness: 0.8, transparent: true }); this.woodMats.push(bMat);
+      scene.add(new T.Mesh(new T.TubeGeometry(curve, 40, 0.085, 10, false), bMat));
+      addNode(b.id, end, 0.26, b.color, 'branch', b.name);
+      const m = b.topics.length;
+      b.topics.forEach((t, j) => {
+        const off = j - (m - 1) / 2;
+        const pos = end.clone().add(out.clone().multiplyScalar(1.25 - Math.abs(off) * 0.15)).add(tan.clone().multiplyScalar(off * 1.0)).add(up.clone().multiplyScalar(0.5 + (j % 2) * 0.55));
+        const ctrl = end.clone().add(out.clone().multiplyScalar(0.6)).add(up.clone().multiplyScalar(0.05));
+        scene.add(new T.Mesh(new T.TubeGeometry(new T.QuadraticBezierCurve3(end, ctrl, pos), 20, 0.03, 6, false), bMat));
+        addNode(t.id, pos, 0.17, b.color, 'topic', t.name);
+      });
+    });
+
+    const N = 260, pp = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) { const r = Math.sqrt(Math.random()) * 9, a = Math.random() * 6.283; pp[i * 3] = Math.cos(a) * r; pp[i * 3 + 1] = Math.random() * 12; pp[i * 3 + 2] = Math.sin(a) * r; }
+    const pg = new T.BufferGeometry(); pg.setAttribute('position', new T.BufferAttribute(pp, 3));
+    this.pollen = new T.Points(pg, new T.PointsMaterial({ color: 0xa59d8c, size: 0.05, transparent: true, opacity: 0.45, depthWrite: false }));
+    scene.add(this.pollen);
+    const pkt = new T.Mesh(new T.SphereGeometry(0.075, 20, 14), new T.MeshStandardMaterial({ color: 0x1a1d1b, emissive: 0x1a1d1b, emissiveIntensity: 1 }));
+    const halo = new T.Sprite(new T.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, opacity: 0.7 }));
+    const tg = new T.BufferGeometry(); tg.setAttribute('position', new T.BufferAttribute(new Float32Array(40 * 3), 3));
+    const trail = new T.Line(tg, new T.LineBasicMaterial({ transparent: true, opacity: 0.6 }));
+    pkt.visible = halo.visible = trail.visible = false; scene.add(pkt, halo, trail);
+    this.pkt = { mesh: pkt, halo, trail, pts: [] };
+    this.subs = [];
+
+    const resize = () => {
+      const w = el.clientWidth, h = el.clientHeight; if (!w || !h) return;
+      renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
+    };
+    this.ro = new ResizeObserver(resize); this.ro.observe(el); resize();
+
+    const ray = new T.Raycaster(), ndc = new T.Vector2();
+    const pick = (e) => {
+      const r = renderer.domElement.getBoundingClientRect();
+      ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      const sid = this.state.selectedId;
+      const hit = ray.intersectObjects(sid ? this.pickables.filter(p => p.userData.sub !== undefined || p.userData.id === sid) : this.pickables, false)[0];
+      if (!hit) return null;
+      return hit.object.userData.sub !== undefined ? 'sub:' + hit.object.userData.sub : hit.object.userData.id;
+    };
+    this.pickAt = (e) => {
+      const r = renderer.domElement.getBoundingClientRect();
+      ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      const meshes = Object.entries(this.objs).map(([id, o]) => { o.mesh.userData.pid = id; return o.mesh; })
+        .concat((this.subs || []).map((s, i) => { s.mesh.userData.pid = 'sub:' + i; return s.mesh; }));
+      const hit = ray.intersectObjects(meshes, false)[0];
+      return hit ? hit.object.userData.pid : null;
+    };
+    let down = null;
+    renderer.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+    renderer.domElement.addEventListener('pointermove', e => {
+      const id = pick(e); this.hoverId = id; renderer.domElement.style.cursor = id ? 'pointer' : 'grab';
+    });
+    renderer.domElement.addEventListener('pointerup', e => {
+      if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+      const id = pick(e); if (id) this.onNodeClick(id);
+    });
+
+    const v = new V(), clock = new T.Clock();
+    const grey = new T.Color(0xd8d5cd);
+    const loop = () => {
+      this.raf = requestAnimationFrame(loop);
+      const t = clock.getElapsedTime(), st = this.state;
+      const dt = Math.min(0.05, t - (this.clockT ?? t)); this.clockT = t;
+      if (st.view === '2d') { this.labelRef.current.style.display = 'none'; return; }
+      this.labelRef.current.style.display = '';
+      const rot = st.rotate ?? (this.props.autoRotate ?? true);
+      controls.autoRotate = rot && !st.selectedId && !this.focus && performance.now() - (this.lastInteract || 0) > 4000;
+      if (this.focus) {
+        controls.target.lerp(this.focus.target, 0.07); camera.position.lerp(this.focus.cam, 0.07);
+        if (camera.position.distanceTo(this.focus.cam) < 0.02) this.focus = null;
+      }
+      const cw = el.clientWidth;
+      const wantShift = st.selectedId && cw > 860 ? Math.min(680, cw - 48) / 2 + 12 : 0;
+      this.shift += (wantShift - this.shift) * 0.08;
+      if (Math.abs(this.shift) > 0.5) camera.setViewOffset(cw, el.clientHeight, this.shift, 0, cw, el.clientHeight); else if (camera.view && camera.view.enabled) camera.clearViewOffset();
+      controls.update();
+      const ps = this.pollen.geometry.attributes.position;
+      for (let i = 0; i < N; i++) { let y = ps.getY(i) + 0.004; if (y > 12) y = 0; ps.setY(i, y); }
+      ps.needsUpdate = true;
+
+      if (this.subFor !== st.selectedId) this.buildSubs(st.selectedId);
+      this.updateSubs(t, dt, camera, el);
+      const iso = !!st.selectedId;
+      this.isoK = (this.isoK || 0) + ((iso ? 1 : 0) - (this.isoK || 0)) * 0.08;
+      const fade = 1 - this.isoK;
+      const wf = 1 - this.isoK * 0.97;
+      this.woodMats.forEach(m => { m.opacity = wf; m.depthWrite = wf > 0.95; });
+      this.grid.material.opacity = 1 - this.isoK * 0.85;
+      this.pollen.material.opacity = 0.45 * (1 - this.isoK);
+      const mode = this.props.labelMode ?? 'all';
+      const w = el.clientWidth, h = el.clientHeight;
+      for (const id in this.objs) {
+        const o = this.objs[id], sel = st.selectedId === id, hov = this.hoverId === id && (!iso || sel);
+        const isBranchSel = st.focusBranch === id;
+        let emi, gop, scale = 1;
+        if (o.kind === 'topic' || o.kind === 'root') {
+          const s = st.status[id];
+          if (s === 'done') { o.mat.color.copy(o.base); emi = 1.0; gop = 0.85; }
+          else if (s === 'learning') { o.mat.color.copy(o.base); const p = 0.5 + 0.5 * Math.sin(t * 2.6 + o.pos.x); emi = 0.35 + 0.4 * p; gop = 0.3 + 0.35 * p; }
+          else { o.mat.color.copy(o.base).lerp(grey, 0.6); emi = 0.08; gop = 0.12; }
+        } else {
+          const b = window.DEVOPS_TREE.branches.find(x => x.id === id);
+          const frac = b.topics.filter(x => st.status[x.id] === 'done').length / b.topics.length;
+          o.mat.color.copy(o.base); emi = 0.35 + 0.65 * frac; gop = 0.3 + 0.55 * frac;
+        }
+        if (sel || hov || isBranchSel) { scale = 1.4; gop = Math.min(1, gop + 0.35); emi = Math.max(emi, 0.8); }
+        o.mat.emissiveIntensity = emi;
+        o.mat.opacity = sel ? 1 : fade;
+        o.mesh.visible = o.glow.visible = o.mat.opacity > 0.02;
+        o.mat.depthWrite = o.mat.opacity > 0.95;
+        if (!sel) gop *= o.mat.opacity;
+        o.mesh.scale.setScalar(o.mesh.scale.x + (scale - o.mesh.scale.x) * 0.2);
+        o.glow.material.opacity = gop * 0.35;
+        o.glow.scale.setScalar(o.radius * 7 * o.mesh.scale.x);
+
+        v.copy(o.pos).project(camera);
+        const show = v.z < 1 && (sel || hov || (!iso && (mode === 'all' || (mode === 'branches' && o.kind !== 'topic'))));
+        if (!show) { o.lab.style.display = 'none'; continue; }
+        const x = (v.x * 0.5 + 0.5) * w, y = (-v.y * 0.5 + 0.5) * h;
+        const dist = camera.position.distanceTo(o.pos);
+        o.lab.style.display = 'block';
+        const lop = (sel || hov) ? 1 : (st.selectedId ? 0.18 : Math.max(0.3, Math.min(1, 1.6 - dist / 26)));
+        o.lab.style.opacity = lop; o.lab.style.pointerEvents = lop < 0.6 ? 'none' : 'auto';
+        o.lab.style.zIndex = (sel || hov) ? 10 : Math.round(100 - dist);
+        o.lab.style.transform = `translate(${x}px,${y}px) translate(-50%, calc(-100% - ${o.kind === 'topic' ? 12 : 16}px))`;
+        if (o.kind === 'topic' || o.kind === 'root') {
+          o.lab.style.background = (sel || hov) ? o.color : 'rgba(255,255,255,.9)';
+          o.lab.style.color = (sel || hov) ? '#ffffff' : (st.status[id] === 'done' ? '#1a1d1b' : '#5f6661');
+        }
+      }
+      renderer.render(scene, camera);
+    };
+    loop();
+  }
+
+  focusOn(id) {
+    const o = this.objs[id]; if (!o || !this.T) return;
+    const V = this.T.Vector3;
+    let out = new V(o.pos.x, 0, o.pos.z);
+    if (out.length() < 0.1) out = new V(this.camera.position.x, 0, this.camera.position.z);
+    out.normalize();
+    const np = (((window.DEVOPS_DEEP || {})[id] || {}).parts || []).length;
+    const d = o.kind === 'topic' ? (np > 12 ? 7.2 : 5.6) : o.kind === 'branch' ? 6.5 : 7;
+    const cam = o.pos.clone().add(out.multiplyScalar(d)).add(new V(0, o.kind === 'root' ? 2.5 : 1.4, 0));
+    this.focus = { target: o.pos.clone(), cam };
+  }
+
+  buildSubs(id) {
+    const T = this.T, V = T.Vector3;
+    (this.subs || []).forEach(s => { this.scene.remove(s.mesh, s.line, s.hit); s.mesh.geometry.dispose(); s.line.geometry.dispose(); s.lab.remove(); });
+    this.pickables = this.pickables.filter(p => p.userData.sub === undefined);
+    this.subs = []; this.subFor = id;
+    const o = id && this.objs[id], dd = id && (window.DEVOPS_DEEP || {})[id];
+    if (!o || !dd || !dd.parts || !dd.parts.length) return;
+    let out = new V(o.pos.x, 0, o.pos.z); if (out.length() < 0.1) out = new V(this.camera.position.x, 0, this.camera.position.z); out.normalize();
+    const tan = new V(-out.z, 0, out.x), up = new V(0, 1, 0);
+    const n = dd.parts.length, rings = n > 12 ? [Math.ceil(n / 2), Math.floor(n / 2)] : [n];
+    let idx = 0;
+    rings.forEach((cnt, ri) => {
+      const R = ri === 0 ? 1.15 : 1.85;
+      for (let k = 0; k < cnt; k++) {
+        const a = Math.PI / 2 - (k / cnt) * Math.PI * 2 - (ri ? Math.PI / cnt : 0);
+        const p = o.pos.clone().add(tan.clone().multiplyScalar(Math.cos(a) * R)).add(up.clone().multiplyScalar(Math.sin(a) * R * 0.85)).add(out.clone().multiplyScalar(0.3));
+        const i = idx++, col = new T.Color(o.color);
+        const mesh = new T.Mesh(new T.SphereGeometry(0.085, 20, 14), new T.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.45, roughness: 0.35 }));
+        mesh.position.copy(p); mesh.scale.setScalar(0.0001);
+        const line = new T.Line(new T.BufferGeometry().setFromPoints([o.pos.clone(), p]), new T.LineBasicMaterial({ color: col, transparent: true, opacity: 0 }));
+        const hit = new T.Mesh(new T.SphereGeometry(0.22, 8, 6), new T.MeshBasicMaterial({ visible: false }));
+        hit.position.copy(p); hit.userData.sub = i;
+        this.scene.add(mesh, line, hit); this.pickables.push(hit);
+        const lab = document.createElement('div');
+        lab.textContent = dd.parts[i].n.replace(/\s*\(.*\)$/, '');
+        lab.style.cssText = `position:absolute;left:0;top:0;display:none;white-space:nowrap;pointer-events:auto;cursor:pointer;font-family:'Geist',sans-serif;font-size:11.5px;font-weight:500;padding:3px 8px;border-radius:6px;border:1px solid ${o.color}66;background:rgba(255,255,255,.94);color:#1a1d1b;box-shadow:0 2px 8px rgba(40,36,24,.08);will-change:transform;`;
+        lab.addEventListener('click', () => this.openPart(i));
+        lab.addEventListener('mouseenter', () => { this.hoverId = 'sub:' + i; });
+        lab.addEventListener('mouseleave', () => { if (this.hoverId === 'sub:' + i) this.hoverId = null; });
+        this.labelRef.current.appendChild(lab);
+        this.subs.push({ mesh, line, hit, lab, pos: p, born: this.clockT || 0, color: o.color, sc: 0 });
+      }
+    });
+  }
+
+  flowPath(id) {
+    const dd = (window.DEVOPS_DEEP || {})[id]; if (!dd || !dd.parts.length) return null;
+    const p = dd.path || (window.DEVOPS_PATHS || {})[id];
+    return dd.flow.map((_, i) => Math.min(dd.parts.length - 1, p && p[i] != null ? p[i] : i % dd.parts.length));
+  }
+
+  updateSubs(t, dt, camera, el) {
+    const st = this.state, T = this.T, w = el.clientWidth, h = el.clientHeight, v = new T.Vector3();
+    const path = st.flowStep >= 0 ? this.flowPath(st.selectedId) : null;
+    const activeIdx = path ? path[st.flowStep] : -1;
+    const many = this.subs.length > 14;
+    this.subs.forEach((s, i) => {
+      const appear = Math.max(0, Math.min(1, (t - s.born - i * 0.035) * 3.5)), ease = 1 - Math.pow(1 - appear, 3);
+      const hov = this.hoverId === 'sub:' + i, act = activeIdx === i, open = st.tab === 'deep' && st.openParts[i];
+      const target = (act ? 2.1 : hov ? 1.6 : open ? 1.3 : 1) * ease;
+      s.sc += (target - s.sc) * 0.2; s.mesh.scale.setScalar(Math.max(0.0001, s.sc));
+      s.mesh.material.emissiveIntensity = act ? 1 : (hov || open) ? 0.75 : 0.4;
+      s.line.material.opacity = (act ? 0.8 : 0.3) * ease;
+      v.copy(s.pos).project(camera);
+      const show = v.z < 1 && ease > 0.5 && (!many || hov || act || open);
+      if (!show) { s.lab.style.display = 'none'; return; }
+      const x = (v.x * 0.5 + 0.5) * w, y = (-v.y * 0.5 + 0.5) * h, hi = hov || act;
+      s.lab.style.display = 'block';
+      s.lab.style.transform = `translate(${x}px,${y}px) translate(-50%, calc(-100% - 10px))`;
+      s.lab.style.background = hi ? s.color : 'rgba(255,255,255,.94)';
+      s.lab.style.color = hi ? '#ffffff' : '#1a1d1b';
+      s.lab.style.zIndex = hi ? 300 : 200;
+    });
+    const P = this.pkt, o = this.objs[st.selectedId];
+    if (activeIdx >= 0 && this.subs[activeIdx] && o) {
+      if (this.pktStep !== st.flowStep) {
+        this.pktFrom = P.mesh.visible ? P.mesh.position.clone() : o.pos.clone();
+        if (!P.mesh.visible) P.pts = [];
+        this.pktTo = this.subs[activeIdx].pos.clone(); this.pktT = 0; this.pktStep = st.flowStep;
+      }
+      this.pktT = Math.min(1, this.pktT + dt * 1.2);
+      const k = this.pktT < 0.5 ? 2 * this.pktT * this.pktT : 1 - Math.pow(-2 * this.pktT + 2, 2) / 2, u = 1 - k;
+      const a = this.pktFrom, b = this.pktTo, c = a.clone().add(b).multiplyScalar(0.5).lerp(o.pos, 0.6);
+      P.mesh.position.set(u * u * a.x + 2 * u * k * c.x + k * k * b.x, u * u * a.y + 2 * u * k * c.y + k * k * b.y, u * u * a.z + 2 * u * k * c.z + k * k * b.z);
+      const col = new T.Color(o.color);
+      P.mesh.material.color.copy(col); P.mesh.material.emissive.copy(col); P.halo.material.color.copy(col); P.trail.material.color.copy(col);
+      P.halo.position.copy(P.mesh.position); P.halo.scale.setScalar(0.55 + 0.12 * Math.sin(t * 8));
+      P.mesh.visible = P.halo.visible = P.trail.visible = true;
+      P.pts.push(P.mesh.position.clone()); if (P.pts.length > 40) P.pts.shift();
+      const arr = P.trail.geometry.attributes.position.array;
+      for (let i = 0; i < 40; i++) { const p = P.pts[Math.min(i, P.pts.length - 1)]; arr[i * 3] = p.x; arr[i * 3 + 1] = p.y; arr[i * 3 + 2] = p.z; }
+      P.trail.geometry.attributes.position.needsUpdate = true; P.trail.geometry.computeBoundingSphere();
+    } else if (P) { P.mesh.visible = P.halo.visible = P.trail.visible = false; this.pktStep = null; }
+  }
+
+  openPart = (i) => {
+    this.setState({ tab: 'deep', openParts: { [i]: true } });
+    setTimeout(() => {
+      const body = this.cardBodyRef.current, el = body && body.querySelector('[data-part="' + i + '"]');
+      if (el) body.scrollTop += el.getBoundingClientRect().top - body.getBoundingClientRect().top - 16;
+    }, 80);
+  };
+
+  toggleFlow = () => {
+    if (this.state.flowStep >= 0) return this.stopFlow();
+    const dd = (window.DEVOPS_DEEP || {})[this.state.selectedId]; if (!dd || !dd.flow.length) return;
+    clearInterval(this.flowTimer);
+    this.setState({ flowStep: 0, tab: 'deep' });
+    this.flowTimer = setInterval(() => {
+      const nx = this.state.flowStep + 1;
+      if (nx >= dd.flow.length) this.stopFlow(); else this.setState({ flowStep: nx });
+    }, 2600);
+  };
+
+  stopFlow = () => { clearInterval(this.flowTimer); this.setState({ flowStep: -1 }); };
+
+  onNodeClick = (id) => {
+    if (typeof id === 'string' && id.startsWith('sub:')) return this.openPart(+id.slice(4));
+    if (this.byId && this.byId[id]) return this.select(id);
+    this.setState({ selectedId: null, focusBranch: id, query: '' });
+    this.focusOn(id);
+    if (this.panelRef.current) this.panelRef.current.scrollTop = 0;
+  };
+
+  setTab = (tab) => { this.setState({ tab }); if (this.cardBodyRef.current) this.cardBodyRef.current.scrollTop = 0; };
+
+  select = (id) => {
+    clearInterval(this.flowTimer);
+    this.setState({ selectedId: id, copied: false, tab: 'overview', conceptIdx: 0, openParts: { 0: true }, flowStep: -1, reveal: {}, cheatCopied: null });
+    if (this.cardBodyRef.current) this.cardBodyRef.current.scrollTop = 0;
+    this.focusOn(id);
+  };
+
+  step = (dir) => {
+    if (!this.flat) return;
+    const i = this.flat.findIndex(t => t.id === this.state.selectedId);
+    const n = this.flat.length;
+    this.select(this.flat[i < 0 ? 0 : (i + dir + n) % n].id);
+  };
+
+  backToAll = () => {
+    clearInterval(this.flowTimer); this.setState({ flowStep: -1 });
+    const fb = this.state.selectedId && this.byId[this.state.selectedId] ? null : this.state.focusBranch;
+    this.setState({ selectedId: null, focusBranch: fb });
+  };
+
+  resetView = () => {
+    if (!this.T) return;
+    this.focus = { target: this.homeTarget.clone(), cam: this.homeCam.clone() };
+    this.setState({ selectedId: null, focusBranch: null });
+  };
+
+  setStatus(id, s) {
+    const status = { ...this.state.status };
+    if (s === 'none') delete status[id]; else status[id] = s;
+    this.setState({ status }); this.persist(status, this.state.notes);
+  }
+
+  studyVals(sel) {
+    const st = this.state, S = (window.DEVOPS_STUDY || {})[sel.id] || { cheat: [], quiz: [], interview: [], trouble: [] };
+    const ans = st.quiz[sel.id] || {};
+    const quiz = (S.quiz || []).map((q, qi) => {
+      const chosen = ans[qi], answered = chosen !== undefined;
+      return {
+        num: qi + 1, q: q.q, e: q.e, answered,
+        verdict: chosen === q.a ? 'Correct.' : 'Not quite.', verdictColor: chosen === q.a ? '#1f7a3c' : '#a33232',
+        opts: q.o.map((text, oi) => {
+          const right = oi === q.a, mine = oi === chosen;
+          let bg = '#ffffff', border = '#dcd9d1', fg = '#1a1d1b';
+          if (answered && right) { bg = '#eef6f0'; border = '#2f9e52'; fg = '#1f6b37'; }
+          else if (answered && mine) { bg = '#fbeaea'; border = '#d64545'; fg = '#a33232'; }
+          else if (answered) { fg = '#8b918c'; border = '#e6e4dd'; }
+          return { text, mark: answered && right ? '✓' : answered && mine ? '✕' : 'ABCDE'[oi], bg, border, fg,
+            onClick: () => { if (answered) return; const quizState = { ...this.state.quiz, [sel.id]: { ...(this.state.quiz[sel.id] || {}), [qi]: oi } }; this.setState({ quiz: quizState }); this.persist(this.state.status, this.state.notes, quizState); } };
+        })
+      };
+    });
+    const nAns = Object.keys(ans).length, nOk = (S.quiz || []).filter((q, k) => ans[k] === q.a).length;
+    const tog = (key) => () => this.setState(s => ({ reveal: { ...s.reveal, [key]: !s.reveal[key] } }));
+    const modes = [['quiz', 'Quiz', (S.quiz || []).length], ['interview', 'Interview', (S.interview || []).length], ['trouble', 'Troubleshoot', (S.trouble || []).length]];
+    return {
+      cheat: (S.cheat || []).map(([cmd, desc], i) => ({ cmd, desc, border: i ? '#e6e4dd' : 'transparent',
+        onClick: () => { navigator.clipboard && navigator.clipboard.writeText(cmd); this.setState({ cheatCopied: cmd }); clearTimeout(this.cheatT); this.cheatT = setTimeout(() => this.setState({ cheatCopied: null }), 1600); } })),
+      cheatCount: (S.cheat || []).length,
+      cheatHint: st.cheatCopied ? 'Copied ✓' : 'Click a row to copy',
+      testModes: modes.map(([k, label, n]) => ({ label: `${label} · ${n}`, onClick: () => this.setState({ testMode: k }),
+        bg: st.testMode === k ? '#ffffff' : 'transparent', fg: st.testMode === k ? '#1a1d1b' : '#5f6661', shadow: st.testMode === k ? '0 1px 3px rgba(40,36,24,0.12)' : 'none' })),
+      modeQuiz: st.testMode === 'quiz', modeInterview: st.testMode === 'interview', modeTrouble: st.testMode === 'trouble',
+      quiz, quizScoreText: nAns ? `Score: ${nOk} / ${quiz.length}${nAns < quiz.length ? ` · ${quiz.length - nAns} left` : nOk === quiz.length ? ' · perfect!' : ''}` : `${quiz.length} questions — pick an answer`,
+      resetQuiz: () => { const quizState = { ...this.state.quiz }; delete quizState[sel.id]; this.setState({ quiz: quizState }); this.persist(this.state.status, this.state.notes, quizState); },
+      interview: (S.interview || []).map((iv, i) => ({ num: i + 1, q: iv.q, a: iv.a, open: !!st.reveal['iv' + i], btn: st.reveal['iv' + i] ? 'Hide answer' : 'Show model answer', onClick: tog('iv' + i) })),
+      trouble: (S.trouble || []).map((tr, i) => ({ ...tr, num: String(i + 1).padStart(2, '0'), steps: tr.steps.map((s, k) => ({ num: k + 1, text: s })),
+        open: !!st.reveal['tr' + i], btn: st.reveal['tr' + i] ? 'Hide diagnosis' : 'Reveal root cause & fix', onClick: tog('tr' + i) })),
+    };
+  }
+
+  pill(s) {
+    if (s === 'done') return { pillText: 'mastered', pillBg: '#1a1d1b', pillFg: '#ffffff', pillBorder: '1px solid #1a1d1b' };
+    if (s === 'learning') return { pillText: 'learning', pillBg: 'transparent', pillFg: '#1a1d1b', pillBorder: '1px dashed #5f6661' };
+    return { pillText: 'new', pillBg: 'transparent', pillFg: '#8b918c', pillBorder: '1px solid #dcd9d1' };
+  }
+
+  renderVals() {
+    const st = this.state;
+    const rot = st.rotate ?? (this.props.autoRotate ?? true);
+    const base = {
+      cardBodyRef: this.cardBodyRef, mountRef: this.mountRef, labelRef: this.labelRef, panelRef: this.panelRef,
+      loading: !st.ready, resetView: this.resetView, backToAll: this.backToAll,
+      rotateLabel: rot ? 'Pause rotation' : 'Auto-rotate',
+      toggleRotate: () => this.setState({ rotate: !rot }),
+      view2d: st.view === '2d', viewLabel: st.view === '2d' ? '3D tree' : '2D roadmap',
+      toggleView: () => this.setState({ view: st.view === '2d' ? '3d' : '2d' }),
+      query: st.query, onQuery: e => this.setState({ query: e.target.value, focusBranch: null }),
+    };
+    if (!st.ready || !this.flat) return { ...base, showAside: true, showLegend: true, showOverview: false, showDetail: false, groups: [], progressText: '' };
+    const D = window.DEVOPS_TREE;
+    const total = this.flat.length;
+    const done = this.flat.filter(t => st.status[t.id] === 'done').length;
+    const learning = this.flat.filter(t => st.status[t.id] === 'learning').length;
+    const q = st.query.trim().toLowerCase();
+    const match = t => !q || [t.name, t.summary, ...(t.concepts || [])].join(' ').toLowerCase().includes(q);
+
+    const groups = D.branches
+      .filter(b => !st.focusBranch || b.id === st.focusBranch)
+      .map(b => ({
+        id: b.id, name: b.name, color: b.color,
+        countText: `${b.topics.filter(t => st.status[t.id] === 'done').length}/${b.topics.length}`,
+        onClick: () => this.onNodeClick(b.id),
+        topics: b.topics.filter(match).map(t => ({
+          id: t.id, name: t.name, teaser: t.summary.split('. ')[0].replace(/\.$/, ''),
+          onClick: () => this.select(t.id), rowBg: st.selectedId === t.id ? '#ecebe5' : 'transparent', ...this.pill(st.status[t.id])
+        }))
+      })).filter(g => g.topics.length);
+
+    const sel = st.selectedId && this.byId[st.selectedId];
+    let detail = {};
+    if (sel) {
+      const idx = this.flat.indexOf(sel);
+      const branch = D.branches.find(b => b.id === sel.branchId);
+      const sibs = branch ? branch.topics : [];
+      const cur = st.status[sel.id] || 'none';
+      detail = {
+        sel: {
+          ...sel, lang: sel.example.lang, exampleTitle: sel.example.title, code: sel.example.code,
+          posText: branch ? `· ${sibs.findIndex(t => t.id === sel.id) + 1} of ${sibs.length}` : `· topic 1 of ${total}`
+        },
+        ...(() => {
+          const list = sel.concepts.map(c => { const k = c.indexOf(': '); return { term: k > 0 ? c.slice(0, k) : c, desc: k > 0 ? c.slice(k + 2) : '' }; });
+          const n = list.length, ci = Math.min(st.conceptIdx, n - 1);
+          return {
+            concept: list[ci], conceptNum: ci + 1, conceptTotal: n, conceptCounter: String(ci + 1).padStart(2, '0') + ' / ' + String(n).padStart(2, '0'),
+            conceptDots: list.map((_, i) => ({ bg: i === ci ? sel.color : (i < ci ? '#a9a59b' : '#dcd9d1'), onClick: () => this.setState({ conceptIdx: i }) })),
+            prevConcept: () => this.setState({ conceptIdx: (ci - 1 + n) % n }),
+            nextConcept: () => ci < n - 1 ? this.setState({ conceptIdx: ci + 1 }) : this.setTab('example'),
+          };
+        })(),
+        concepts: sel.concepts.map((c, i) => {
+          const k = c.indexOf(': ');
+          return { num: String(i + 1).padStart(2, '0'), term: k > 0 ? c.slice(0, k) : c, desc: k > 0 ? ' — ' + c.slice(k + 2) : '' };
+        }),
+        statusOptions: [['none', 'Not started'], ['learning', 'Learning'], ['done', 'Mastered']].map(([k, label]) => ({
+          label, onClick: () => this.setStatus(sel.id, k),
+          bg: cur === k ? '#1a1d1b' : 'transparent', fg: cur === k ? '#ffffff' : '#5f6661'
+        })),
+        noteValue: st.notes[sel.id] || '',
+        onNote: e => { const notes = { ...this.state.notes, [sel.id]: e.target.value }; this.setState({ notes }); this.persist(this.state.status, notes); },
+        copyLabel: st.copied ? 'Copied ✓' : 'Copy',
+        copyCode: () => {
+          navigator.clipboard && navigator.clipboard.writeText(sel.example.code);
+          this.setState({ copied: true }); clearTimeout(this.copyT); this.copyT = setTimeout(() => this.setState({ copied: false }), 1500);
+        },
+        tabs: [['overview', 'Overview'], ['deep', 'Deep dive'], ['concepts', 'Concepts'], ['example', 'Example'], ['cheat', 'Cheat sheet'], ['test', 'Test yourself'], ['practice', 'Practice']].map(([k, label], i) => ({
+          num: '0' + (i + 1), label, onClick: () => this.setTab(k),
+          fg: st.tab === k ? '#1a1d1b' : '#5f6661', line: st.tab === k ? sel.color : 'transparent'
+        })),
+        tabOverview: st.tab === 'overview', tabDeep: st.tab === 'deep',
+        ...(() => {
+          const dd = (window.DEVOPS_DEEP || {})[sel.id] || { intro: 'Deep dive coming soon for this topic.', flow: [], parts: [] };
+          const allOpen = dd.parts.length > 0 && dd.parts.every((_, i) => st.openParts[i]);
+          return {
+            deep: dd, deepCount: dd.parts.length,
+            deepFlow: dd.flow.map((t, i) => {
+              const on = st.flowStep === i;
+              return { num: i + 1, text: t, line: i < dd.flow.length - 1 ? '#dcd9d1' : 'transparent',
+                bg: on ? '#f3f2ed' : 'transparent', fg: on ? '#1a1d1b' : '#3a3f3c', fw: on ? 600 : 400,
+                dotBg: on || st.flowStep > i ? sel.color : '#ffffff', dotFg: on || st.flowStep > i ? '#ffffff' : sel.color };
+            }),
+            flowBtnLabel: st.flowStep >= 0 ? '■ Stop' : '▶ Play in 3D',
+            flowBtnBg: st.flowStep >= 0 ? sel.color : '#ffffff', flowBtnFg: st.flowStep >= 0 ? '#ffffff' : sel.color,
+            toggleFlow: this.toggleFlow,
+            deepParts: dd.parts.map((p, i) => ({
+              ...p, idx: i, num: String(i + 1).padStart(2, '0'), open: !!st.openParts[i], hasX: !!p.x, icon: st.openParts[i] ? '−' : '+',
+              border: i === 0 ? 'transparent' : '#e6e4dd', bg: (st.flowStep >= 0 && (this.flowPath(sel.id) || [])[st.flowStep] === i) ? '#f3f2ed' : st.openParts[i] ? '#faf9f6' : 'transparent',
+              onClick: () => this.setState(s => ({ openParts: { ...s.openParts, [i]: !s.openParts[i] } }))
+            })),
+            toggleAllLabel: allOpen ? 'Collapse all' : 'Expand all',
+            toggleAllParts: () => this.setState({ openParts: allOpen ? {} : Object.fromEntries(dd.parts.map((_, i) => [i, true])) }),
+          };
+        })(), tabConcepts: st.tab === 'concepts', tabExample: st.tab === 'example', tabPractice: st.tab === 'practice',
+        tabCheat: st.tab === 'cheat', tabTest: st.tab === 'test',
+        ...this.studyVals(sel),
+        siblings: (branch ? sibs : this.flat.slice(1, 5)).filter(t => t.id !== sel.id).map(t => ({ name: t.name, onClick: () => this.select(t.id) })),
+        hasSiblings: true,
+        goPrev: () => this.step(-1), goNext: () => this.step(1),
+        forwardLabel: { overview: 'Next: Deep dive →', deep: 'Next: Concepts →', concepts: 'Next: Example →', example: 'Next: Cheat sheet →', cheat: 'Next: Test yourself →', test: 'Next: Practice →', practice: 'Next topic →' }[st.tab],
+        forward: () => {
+          const i = TAB_ORDER.indexOf(st.tab);
+          if (i < TAB_ORDER.length - 1) this.setTab(TAB_ORDER[i + 1]); else this.step(1);
+        },
+        _idx: idx
+      };
+    }
+
+    return {
+      ...base, ...detail,
+      showOverview: true, showDetail: !!sel, showAside: !sel, showLegend: !sel,
+      progressText: `${total} topics · ${D.branches.length} branches · ${done} mastered`,
+      doneCount: done, totalCount: total, learningCount: learning,
+      pct: `${Math.round((done / total) * 100)}%`,
+      root: this.pill(st.status[D.root.id]),
+      showRootCard: !st.focusBranch && match(D.root),
+      openRoot: () => this.select(D.root.id),
+      hasBranchFocus: !!st.focusBranch, clearBranchFocus: () => this.setState({ focusBranch: null }),
+      groups, noResults: groups.length === 0 && !match(D.root),
+      roadmap: [{ id: 'root', name: 'Start here', color: '#1a1d1b', topics: [this.byId[D.root.id]] }, ...D.branches].map((b, i) => ({
+        num: String(i).padStart(2, '0'), name: b.name, color: b.color,
+        countText: `${b.topics.filter(t => st.status[t.id] === 'done').length}/${b.topics.length}`,
+        topics: b.topics.map(t => {
+          const S = (window.DEVOPS_STUDY || {})[t.id], ans = st.quiz[t.id] || {};
+          const qn = S && S.quiz ? S.quiz.length : 0, ok = S && S.quiz ? S.quiz.filter((q, k) => ans[k] === q.a).length : 0;
+          return { name: t.name, onClick: () => this.select(t.id), border: st.selectedId === t.id ? b.color : '#e6e4dd',
+            quizText: qn && Object.keys(ans).length ? `quiz ${ok}/${qn}` : '', ...this.pill(st.status[t.id]) };
+        })
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>
